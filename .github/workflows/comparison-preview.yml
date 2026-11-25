@@ -1,0 +1,34 @@
+name: Comparison engine preview
+
+on:
+  push:
+    branches: [test/enum-variants-preview]
+
+permissions:
+  contents: read
+
+jobs:
+  comparison-tests:
+    if: github.repository == 'IWillBurn/jdbcrest'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Check out the comparison engine
+        uses: actions/checkout@v7
+        with:
+          repository: IWillBurn/junit-comparison-engine
+          ref: 972f20b2accf283e6462082e2853ff461fbceb50
+          path: .comparison-engine
+          persist-credentials: false
+      - name: Install the comparison engine snapshot
+        run: mvn -B -ntp -f .comparison-engine/pom.xml -pl engine -am install
+      - name: Run JDBCrest comparison tests
+        run: >-
+          mvn -B -ntp -pl cli -am -Dtest=ApiComparisonTest,FieldSerializationComparisonTest
+          -Dsurefire.failIfNoSpecifiedTests=false test
